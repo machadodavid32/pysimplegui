@@ -1,0 +1,51 @@
+import PySimpleGUI as sg
+import threading
+from utilidades import extrair_precos
+
+
+LICENCAS = ['H1H124-H1H124-H1H124-H1H124', '1D2D1-1D2D1-1D2D1-1D2D1-1D2D1']
+
+
+def janela_login():
+    layout = [
+        [sg.Text('Digite a liçensa do produto'), sg.Input(
+            key='licenca')],
+        [sg.Button('Validar'), sg.Button('Sair'), sg.Text(key='status_aprovacao', size=(30, 1))]]
+    return sg.Window('Primeira Janela', layout, finalize=True)
+
+
+def janela_busca_de_precos():
+    layout = [
+        [sg.Text('Digite qual tarefa gostaria de automatizar!')],
+        [sg.Button('Verificar preços', key='botao_verificar_precos')]
+    ]
+    return sg.Window('Busca de Preços!', layout, finalize=True)
+
+
+janela_login_, janela_busca_de_precos_ = janela_login(), None
+while True:
+    window, event, values = sg.read_all_windows()
+    if event == sg.WIN_CLOSED:
+        break
+
+    elif window == janela_login_:
+        if event == 'Validar':
+            if values['licenca'] in (LICENCAS):
+                janela_login_.close()
+                janela_busca_de_precos_ = janela_busca_de_precos()
+            else:
+                janela_login_['status_aprovacao'].update('Liçensa inválida!')
+        elif event == 'Sair':
+            break
+    elif window == janela_busca_de_precos_:
+        if event == 'Verificar preços':
+            thread_automacao_web = threading.Thread(
+                target=extrair_precos, args=(window,), daemon=True)
+            thread_automacao_web.start()
+
+    elif event == 'automacao_finalizada':
+        thread_automacao_web.join()
+        precos = values['automacao_finalizada']
+        for preco in precos:
+            sg.popup_ok(preco)
+
